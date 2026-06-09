@@ -30,8 +30,8 @@ models/*.ckpt
 # Data (genellikle büyük olur, gerekirse kaldırabilirsiniz)
 data/
 
-# Output & logs
-outputs/
+# Output & logs - checkpoint modeller hariç
+outputs/checkpoint_*.pth
 *.log
 training_log.jsonl
 
