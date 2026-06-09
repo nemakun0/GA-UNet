@@ -1,0 +1,24 @@
+# GA-UNet Streamlit Test Arayüzü — Bağımlılıklar
+# Kurulum: pip install -r requirements_app.txt
+
+# ── PyTorch (CUDA 12.1) ─────────────────────────────────────────────────────
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+torchvision>=0.16.0
+
+# ── Web Arayüzü ──────────────────────────────────────────────────────────────
+streamlit>=1.32.0
+
+# ── Medikal Görüntüleme ──────────────────────────────────────────────────────
+nibabel>=5.0.0
+
+# ── Veri & Analiz ────────────────────────────────────────────────────────────
+numpy>=1.24.0
+pandas>=2.0.0
+openpyxl>=3.1.0          # XLSX okuma için (pandas engine)
+scipy>=1.11.0             # HD95 için distance_transform_edt
+
+# ── Görselleştirme ───────────────────────────────────────────────────────────
+matplotlib>=3.8.0
+seaborn>=0.13.0
+Pillow>=10.0.0

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GA-UNet — Eğitim Paneli</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --border: #1e2129;
+      --accent: #4f8ef7;
+      --warn: #f7714f;
+      --success: #4fca8e;
+      --muted: #4a5168;
+      --text: #e2e8f0;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: inline-block;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
+
+    #status-dot.live {
+      background: var(--success);
+      animation: pulse 1.5s infinite;
+    }
+
+    #status-dot.done {
+      background: var(--accent);
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    #status-label {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .metric-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .metric-value.blue {
+      color: var(--accent);
+    }
+
+    .metric-value.orange {
+      color: var(--warn);
+    }
+
+    .metric-value.green {
+      color: var(--success);
+    }
+
+    .metric-value.gap-good {
+      color: var(--success);
+    }
+
+    .metric-value.gap-bad {
+      color: var(--warn);
+    }
+
+    .metric-sub {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 700px) {
+      .charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .chart-title {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 220px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .log-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+
+    .log-title {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    #log-body {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.8;
+      color: var(--muted);
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    #log-body .log-row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    #log-body .ep {
+      color: var(--accent);
+      min-width: 60px;
+    }
+
+    #log-body .td {
+      color: var(--text);
+    }
+
+    #log-body .vd {
+      color: var(--warn);
+    }
+
+    #log-body .best {
+      color: var(--success);
+    }
+
+    #log-body .gap-val {
+      min-width: 50px;
+    }
+
+    #file-input-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    #file-path {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.75rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      flex: 1;
+      outline: none;
+    }
+
+    #file-path:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: background 0.15s;
+    }
+
+    button:hover {
+      background: rgba(79, 142, 247, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>GA-UNet</h1>
+    <div>
+      <span id="status-dot"></span>
+      <span id="status-label">BEKLENIYOR</span>
+    </div>
+  </header>
+
+  <div id="file-input-row">
+    <span>Log dosyası:</span>
+    <input id="file-path" type="text" value="training_log.jsonl" placeholder="training_log.jsonl yolu..." />
+    <button onclick="startPolling()">Başlat ▶</button>
+    <button onclick="stopPolling()">Durdur ■</button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Epoch</div>
+      <div class="metric-value blue" id="m-epoch">—</div>
+      <div class="metric-sub" id="m-epoch-sub">/ — toplam</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Train Dice</div>
+      <div class="metric-value blue" id="m-train">—</div>
+      <div class="metric-sub" id="m-train-sub">son epoch</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Val Dice</div>
+      <div class="metric-value orange" id="m-val">—</div>
+      <div class="metric-sub" id="m-val-sub">son epoch</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">En İyi Val</div>
+      <div class="metric-value green" id="m-best">—</div>
+      <div class="metric-sub" id="m-best-sub">epoch —</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Overfitting</div>
+      <div class="metric-value" id="m-gap">—</div>
+      <div class="metric-sub">train − val farkı</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Val Loss</div>
+      <div class="metric-value blue" id="m-vloss">—</div>
+      <div class="metric-sub">son epoch</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <div class="chart-title">Dice skoru</div>
+      <div class="chart-wrap"><canvas id="diceChart"></canvas></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#4f8ef7"></span>Train</span>
+        <span><span class="dot" style="background:#f7714f"></span>Val</span>
+        <span><span class="dot" style="background:#4fca8e"></span>En iyi val</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Loss</div>
+      <div class="chart-wrap"><canvas id="lossChart"></canvas></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#4f8ef7"></span>Train</span>
+        <span><span class="dot" style="background:#f7714f"></span>Val</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-card">
+    <div class="log-title">Epoch geçmişi</div>
+    <div id="log-body"><span style="color:var(--muted)">Henüz veri yok...</span></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+    let pollTimer = null;
+    let lastLineCount = 0;
+    let allData = [];
+    let bestVal = 0;
+    let bestEpoch = 0;
+    let diceChart, lossChart;
+
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: '#4a5168', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 10 },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          ticks: { color: '#4a5168', font: { family: 'JetBrains Mono', size: 10 }, callback: v => v.toFixed(2) },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    };
+
+    function initCharts() {
+      diceChart = new Chart(document.getElementById('diceChart'), {
+        type: 'line',
+        data: {
+          labels: [], datasets: [
+            { label: 'Train', data: [], borderColor: '#4f8ef7', borderWidth: 2, pointRadius: 0, tension: 0.3, backgroundColor: 'transparent' },
+            { label: 'Val', data: [], borderColor: '#f7714f', borderWidth: 2, pointRadius: 0, tension: 0.3, backgroundColor: 'transparent' },
+            { label: 'Best', data: [], borderColor: '#4fca8e', borderWidth: 0, pointRadius: d => d.parsed ? 5 : 0, pointBackgroundColor: '#4fca8e', tension: 0, backgroundColor: 'transparent', showLine: false }
+          ]
+        },
+        options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0.4, max: 1.0 } } }
+      });
+
+      lossChart = new Chart(document.getElementById('lossChart'), {
+        type: 'line',
+        data: {
+          labels: [], datasets: [
+            { label: 'Train', data: [], borderColor: '#4f8ef7', borderWidth: 2, pointRadius: 0, tension: 0.3, backgroundColor: 'transparent' },
+            { label: 'Val', data: [], borderColor: '#f7714f', borderWidth: 2, pointRadius: 0, tension: 0.3, backgroundColor: 'transparent' }
+          ]
+        },
+        options: chartDefaults
+      });
+    }
+
+    function updateCharts() {
+      const epochs = allData.map(d => d.epoch);
+      const trainDice = allData.map(d => d.train_dice);
+      const valDice = allData.map(d => d.val_dice);
+      const trainLoss = allData.map(d => d.train_loss);
+      const valLoss = allData.map(d => d.val_loss);
+      const bestPoints = allData.map(d => d.epoch === bestEpoch ? d.val_dice : null);
+
+      diceChart.data.labels = epochs;
+      diceChart.data.datasets[0].data = trainDice;
+      diceChart.data.datasets[1].data = valDice;
+      diceChart.data.datasets[2].data = bestPoints;
+      diceChart.update();
+
+      lossChart.data.labels = epochs;
+      lossChart.data.datasets[0].data = trainLoss;
+      lossChart.data.datasets[1].data = valLoss;
+      lossChart.update();
+    }
+
+    function updateMetrics(d) {
+      const gap = d.train_dice - d.val_dice;
+      document.getElementById('m-epoch').textContent = d.epoch;
+      document.getElementById('m-epoch-sub').textContent = `/ ${d.total_epochs || '?'} toplam`;
+      document.getElementById('m-train').textContent = d.train_dice.toFixed(4);
+      document.getElementById('m-val').textContent = d.val_dice.toFixed(4);
+      document.getElementById('m-best').textContent = bestVal.toFixed(4);
+      document.getElementById('m-best-sub').textContent = `epoch ${bestEpoch}`;
+      document.getElementById('m-vloss').textContent = d.val_loss.toFixed(4);
+
+      const gapEl = document.getElementById('m-gap');
+      gapEl.textContent = gap.toFixed(4);
+      gapEl.className = 'metric-value ' + (gap > 0.2 ? 'gap-bad' : 'gap-good');
+    }
+
+    function appendLog(d) {
+      const body = document.getElementById('log-body');
+      if (body.querySelector('span')) body.innerHTML = '';
+      const isBest = d.epoch === bestEpoch;
+      const gap = (d.train_dice - d.val_dice).toFixed(3);
+      const row = document.createElement('div');
+      row.className = 'log-row';
+      row.innerHTML = `
+    <span class="ep">E${String(d.epoch).padStart(3, '0')}</span>
+    <span class="td">tr:${d.train_dice.toFixed(4)}</span>
+    <span class="vd">vl:${d.val_dice.toFixed(4)}</span>
+    <span class="gap-val" style="color:${parseFloat(gap) > 0.2 ? '#f7714f' : '#4fca8e'}">Δ${gap}</span>
+    ${isBest ? '<span class="best">★ best</span>' : ''}
+  `;
+      body.appendChild(row);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function fetchLog() {
+      const path = document.getElementById('file-path').value.trim();
+      try {
+        const r = await fetch(path + '?t=' + Date.now());
+        if (!r.ok) return;
+        const text = await r.text();
+        const lines = text.trim().split('\n').filter(Boolean);
+        if (lines.length === lastLineCount) return;
+
+        const newLines = lines.slice(lastLineCount);
+        lastLineCount = lines.length;
+
+        newLines.forEach(line => {
+          try {
+            const d = JSON.parse(line);
+            allData.push(d);
+            if (d.val_dice > bestVal) { bestVal = d.val_dice; bestEpoch = d.epoch; }
+            appendLog(d);
+            updateMetrics(d);
+          } catch (e) { }
+        });
+
+        updateCharts();
+
+        const dot = document.getElementById('status-dot');
+        const lbl = document.getElementById('status-label');
+        const last = allData[allData.length - 1];
+        if (last && last.epoch === last.total_epochs) {
+          dot.className = 'done';
+          lbl.textContent = 'TAMAMLANDI';
+        } else {
+          dot.className = 'live';
+          lbl.textContent = `CANLI · ${new Date().toLocaleTimeString('tr-TR')}`;
+        }
+      } catch (e) { }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      lastLineCount = 0; allData = []; bestVal = 0; bestEpoch = 0;
+      document.getElementById('log-body').innerHTML = '<span style="color:var(--muted)">Bekleniyor...</span>';
+      diceChart.data.labels = []; diceChart.data.datasets.forEach(d => d.data = []); diceChart.update();
+      lossChart.data.labels = []; lossChart.data.datasets.forEach(d => d.data = []); lossChart.update();
+      document.getElementById('status-dot').className = 'live';
+      document.getElementById('status-label').textContent = 'BAĞLANIYOR...';
+      fetchLog();
+      pollTimer = setInterval(fetchLog, 3000);
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      document.getElementById('status-dot').className = '';
+      document.getElementById('status-label').textContent = 'DURDURULDU';
+    }
+
+    initCharts();
+  </script>
+</body>
+
+</html>
