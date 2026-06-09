@@ -1,35 +1,35 @@
 # GA-UNet: GhostNetV2-Attention U-Net
 
-> **Hafif ve yüksek performanslı stroke lezyonu segmentasyon mimarisi**  
-> GhostNetV2 encoder + SimAM attention decoder ile 2.5D beyin MR görüntülerinden otomatik inme lezyonu segmentasyonu.
+> **A lightweight, high-performance stroke lesion segmentation architecture**  
+> Automatic stroke lesion segmentation from 2.5D brain MRI using a GhostNetV2 encoder and SimAM attention decoder.
 
 ---
 
-## 🧠 Proje Hakkında
+## 🧠 About
 
-GA-UNet, **inme (stroke) lezyonu segmentasyonu** için tasarlanmış hibrit bir derin öğrenme mimarisidir. Klasik U-Net'in encoder-decoder yapısını korurken:
+GA-UNet is a hybrid deep learning architecture designed for **stroke lesion segmentation**. While preserving the classic U-Net encoder-decoder structure, it:
 
-- **GhostNetV2** encoder ile hesaplama maliyetini düşürür
-- **SimAM** (parameter-free attention) ile decoder'da skip connection özelliklerini güçlendirir
-- **2.5D giriş** stratejisiyle komşu aksiyel dilimlerden bağlamsal bilgi toplar
+- Reduces computational cost with a **GhostNetV2** encoder
+- Strengthens skip connection features using **SimAM** (parameter-free attention) in the decoder
+- Captures contextual information from neighboring axial slices via a **2.5D input** strategy
 
-### Veri Seti
+### Dataset
 
 [**ATLAS 2.0**](https://fcon_1000.projects.nitrc.org/indi/retro/atlas.html) — Anatomical Tracings of Lesions After Stroke  
-- T1-ağırlıklı MRI volumeları
-- Elle çizilmiş ikili lezyon maskeleri
-- Çoklu tarayıcı marka dataseti (scanner-brand tabanlı stratified split)
+- T1-weighted MRI volumes
+- Manually annotated binary lesion masks
+- Multi-scanner dataset with scanner-brand stratified splitting
 
 ---
 
-## 🏗️ Mimari
+## 🏗️ Architecture
 
 ```
-Giriş (B, num_slices, H, W)
+Input (B, num_slices, H, W)
         │
         ▼
 ┌─────────────────────────────────┐
-│      GhostNetV2 Encoder         │  ← Hafif, Ghost module tabanlı
+│      GhostNetV2 Encoder         │  ← Lightweight Ghost module backbone
 │  Level 0: H/2                   │
 │  Level 1: H/4                   │
 │  Level 2: H/8                   │
@@ -48,197 +48,199 @@ Giriş (B, num_slices, H, W)
 └──────────────┬──────────────────┘
                │
         ┌──────▼──────┐
-        │  Seg Head   │  ← Conv → 1 kanal sigmoid
+        │  Seg Head   │  ← Conv → 1-channel sigmoid
         └─────────────┘
                │
-        Çıkış (B, 1, H, W)
+        Output (B, 1, H, W)
 ```
 
-### Temel Bileşenler
+### Key Components
 
-| Bileşen | Açıklama |
+| Component | Description |
 |---|---|
-| `GhostNetV2Encoder` | Depthwise + cheap linear op ile 2x daha az FLOPs |
-| `SimAM` | Parametre içermeyen, nörobilim tabanlı 3D attention |
-| `FocalDiceBCELoss` | Küçük lezyonlar için Focal Dice + BCE + Weighted BCE |
-| `TestTimeAdaptation` | Yatay/dikey flip ile TTA augmentation |
-| `OneCycleLR` | Warmup + cosine annealing scheduler |
+| `GhostNetV2Encoder` | 2× fewer FLOPs via depthwise + cheap linear operations |
+| `SimAM` | Parameter-free, neuroscience-inspired 3D attention |
+| `FocalDiceBCELoss` | Focal Dice + BCE + Weighted BCE for small lesions |
+| `TestTimeAdaptation` | Horizontal/vertical flip-based TTA |
+| `OneCycleLR` | Warmup + cosine annealing learning rate scheduler |
 
 ---
 
-## 📁 Proje Yapısı
+## 📁 Project Structure
 
 ```
 GA-UNet/
 ├── models/
-│   ├── ga_unet.py          # Ana GAUNet modeli (encoder + decoder)
-│   ├── ghost_module.py     # GhostNetV2 encoder ve Ghost module
-│   └── simam.py            # SimAM attention modülü
+│   ├── ga_unet.py          # Main GAUNet model (encoder + decoder)
+│   ├── ghost_module.py     # GhostNetV2 encoder and Ghost module
+│   └── simam.py            # SimAM attention module
 │
 ├── utils/
 │   ├── losses.py           # DiceLoss, FocalDiceLoss, FocalDiceBCELoss
-│   ├── metrics.py          # DSC, IoU, HD95 metrikleri
+│   ├── metrics.py          # DSC, IoU, HD95 metrics
 │   ├── tta.py              # Test-Time Augmentation
-│   └── live_plot.py        # Eğitim sırasında canlı grafik
+│   └── live_plot.py        # Live training plot
 │
-├── data/                   # ATLAS veri seti (gitignore'da, indirilmeli)
+├── data/                   # ATLAS dataset (gitignored, must be downloaded)
 │
 ├── outputs/
-│   ├── best_model.pth      # En iyi model ağırlıkları
-│   ├── training_curves.png # Eğitim grafikleri
-│   ├── training_log.csv    # Epoch bazlı metrik logu
-│   ├── test_tta_results.csv# TTA karşılaştırma sonuçları
-│   └── dataset_splits.json # Train/val/test split manifesti
+│   ├── best_model.pth      # Best model weights
+│   ├── training_curves.png # Training history plots
+│   ├── training_log.csv    # Per-epoch metric log
+│   ├── test_tta_results.csv# TTA comparison results
+│   └── dataset_splits.json # Train/val/test split manifest
 │
-├── train_local.py          # Ana eğitim scripti (RTX 4060 için optimize)
-├── evaluate_tta.py         # Test seti TTA değerlendirme scripti
-├── app.py                  # Web arayüzü (Gradio/Flask)
-├── dashboard.html          # Canlı eğitim dashboard'u
-└── requirements.txt        # Python bağımlılıkları
+├── train_local.py          # Main training script (optimized for RTX 4060)
+├── evaluate_tta.py         # Test set TTA evaluation script
+├── app.py                  # Web interface
+├── dashboard.html          # Live training dashboard
+└── requirements.txt        # Python dependencies
 ```
 
 ---
 
-## ⚙️ Kurulum
+## ⚙️ Installation
 
-### Gereksinimler
+### Requirements
 
 - Python ≥ 3.9
-- CUDA 12.1+ destekli GPU (önerilen: 8GB VRAM)
+- GPU with CUDA 12.1+ support (recommended: 8GB VRAM)
 - PyTorch ≥ 2.1.0
 
-### Adımlar
+### Steps
 
 ```bash
-# 1. Repoyu klonla
+# 1. Clone the repository
 git clone https://github.com/nemakun0/GA-UNet.git
 cd GA-UNet
 
-# 2. Sanal ortam oluştur (opsiyonel ama önerilen)
+# 2. Create a virtual environment (optional but recommended)
 python -m venv venv
 source venv/bin/activate      # Linux/Mac
 venv\Scripts\activate         # Windows
 
-# 3. Bağımlılıkları yükle
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-### Veri Seti
+### Dataset
 
-[ATLAS 2.0](https://fcon_1000.projects.nitrc.org/indi/retro/atlas.html) veri setini indirip proje dizininin `data/` klasörüne yerleştirin.
+Download the [ATLAS 2.0](https://fcon_1000.projects.nitrc.org/indi/retro/atlas.html) dataset and place it in the `data/` directory of the project.
 
 ---
 
-## 🚀 Kullanım
+## 🚀 Usage
 
-### Eğitim
+### Training
 
 ```bash
-# Varsayılan ayarlarla eğitim (otomatik ATLAS veri seti bulma)
+# Train with default settings (auto-detects ATLAS dataset)
 python train_local.py
 
-# Kaldığı yerden devam et
+# Resume from a checkpoint
 python train_local.py --resume outputs/best_model.pth
 
-# Özel parametrelerle
+# Custom parameters
 python train_local.py \
     --epochs 100 \
     --batch-size 12 \
     --lr 1e-3 \
-    --data-dir /yol/atlas/veri
+    --data-dir /path/to/atlas/data
 
-# Tüm seçenekler
+# See all options
 python train_local.py --help
 ```
 
-### Eğitim Parametreleri
+### Training Parameters
 
-| Parametre | Varsayılan | Açıklama |
+| Parameter | Default | Description |
 |---|---|---|
-| `--epochs` | 100 | Toplam epoch sayısı |
-| `--batch-size` | 12 | Batch boyutu (RTX 4060 8GB için optimize) |
-| `--accum-steps` | 2 | Gradient accumulation (effective batch = 24) |
-| `--lr` | 1e-3 | Maksimum öğrenme oranı |
-| `--num-slices` | 3 | 2.5D giriş dilim sayısı |
-| `--target-size` | 192 | Görüntü yeniden boyutlandırma (192×192) |
-| `--patience` | 20 | Early stopping sabırlılık |
-| `--hd95-freq` | 5 | HD95 hesaplama sıklığı (her N epoch) |
+| `--epochs` | 100 | Total number of epochs |
+| `--batch-size` | 12 | Batch size (optimized for RTX 4060 8GB) |
+| `--accum-steps` | 2 | Gradient accumulation steps (effective batch = 24) |
+| `--lr` | 1e-3 | Maximum learning rate |
+| `--num-slices` | 3 | Number of 2.5D input slices |
+| `--target-size` | 192 | Image resize resolution (192×192) |
+| `--patience` | 20 | Early stopping patience |
+| `--hd95-freq` | 5 | HD95 computation frequency (every N epochs) |
 
-### Dashboard
+### Live Dashboard
 
-Eğitim sırasında canlı metrikleri takip etmek için tarayıcıda açın:
+Monitor live training metrics in your browser during training:
 
 ```
 http://localhost:8765/dashboard.html
 ```
 
-### TTA Değerlendirme
+### TTA Evaluation
 
 ```bash
-# Test seti üzerinde TTA karşılaştırması
+# Run TTA comparison on the test set
 python evaluate_tta.py
 ```
 
-Sonuçlar `outputs/test_tta_results.csv` dosyasına kaydedilir.
+Results are saved to `outputs/test_tta_results.csv`.
 
 ---
 
-## 📊 Kayıp Fonksiyonu
+## 📊 Loss Function
 
-**FocalDiceBCELoss** — Küçük ve seyrek lezyonlar için özel tasarım:
+**FocalDiceBCELoss** — Designed for small and sparse lesion segmentation:
 
 ```
 Loss = 0.5 × FocalDice + 0.3 × BCE + 0.2 × WeightedBCE(pos=5)
 ```
 
-| Bileşen | Ağırlık | Rol |
+| Component | Weight | Role |
 |---|---|---|
-| Focal Dice (γ=2) | 0.5 | Küçük lezyonlara odaklanır |
-| BCE | 0.3 | Piksel seviyesinde kararlı gradyan |
-| Weighted BCE (pos_w=5) | 0.2 | Lezyon piksellerini 5× daha ağır cezalandırır |
+| Focal Dice (γ=2) | 0.5 | Focuses on small/hard lesions |
+| BCE | 0.3 | Stable pixel-level gradients |
+| Weighted BCE (pos_w=5) | 0.2 | Penalizes lesion pixel errors 5× more |
 
 ---
 
-## 📈 Eğitim Sonuçları
+## 📈 Training Results
 
-Eğitim eğrilerine `outputs/training_curves.png` üzerinden bakabilirsiniz.
+Training curves are available at `outputs/training_curves.png`.
 
-Raporlanan metrikler:
-- **DSC** (Dice Similarity Coefficient)
-- **IoU** (Intersection over Union)  
-- **HD95** (95. yüzdelik Hausdorff Mesafesi, mm cinsinden)
-
----
-
-## 🔧 Optimizasyonlar
-
-Bu proje RTX 4060 (8GB VRAM) için özel olarak optimize edilmiştir:
-
-- **Batch size**: 4 → 12 (3× GPU kullanımı)
-- **Gradient accumulation**: Effective batch = 24
-- **Mixed Precision (AMP)**: `torch.cuda.amp.autocast`
-- **TF32**: `allow_tf32=True` ile ~%10 hız artışı
-- **Paralel veri yükleme**: 6 worker
-- **HD95 hesaplama**: Her 5 epoch'ta bir (validation 3× hızlanır)
-- **torch.compile()**: Linux'ta ~%20 hız artışı (Windows'ta otomatik devre dışı)
+Reported metrics:
+- **DSC** — Dice Similarity Coefficient
+- **IoU** — Intersection over Union
+- **HD95** — 95th percentile Hausdorff Distance (in mm)
 
 ---
 
-## 📦 Bağımlılıklar
+## 🔧 Performance Optimizations
+
+This project is specifically optimized for an RTX 4060 (8GB VRAM):
+
+| Optimization | Detail |
+|---|---|
+| Batch size | 4 → 12 (3× GPU utilization) |
+| Gradient accumulation | Effective batch = 24 |
+| Mixed Precision (AMP) | `torch.cuda.amp.autocast` |
+| TF32 | `allow_tf32=True` (~10% speedup) |
+| Parallel data loading | 6 workers |
+| HD95 frequency | Every 5 epochs (3× faster validation) |
+| `torch.compile()` | ~20% speedup on Linux (auto-disabled on Windows) |
+
+---
+
+## 📦 Dependencies
 
 ```
 torch>=2.1.0       (CUDA 12.1)
 torchvision>=0.16.0
 numpy>=1.24.0
-nibabel>=5.0.0     (NIfTI dosya okuma)
-scipy>=1.11.0      (HD95 hesaplama)
+nibabel>=5.0.0     (NIfTI file reading)
+scipy>=1.11.0      (HD95 computation)
 matplotlib>=3.8.0
 tqdm>=4.66.0
 ```
 
 ---
 
-## 📄 Referanslar
+## 📄 References
 
 - **GhostNetV2**: Tang et al., *"GhostNetV2: Enhance Cheap Operation with Long-Range Attention"*, NeurIPS 2022
 - **SimAM**: Yang et al., *"SimAM: A Simple, Parameter-Free Attention Module for Convolutional Neural Networks"*, ICML 2021
@@ -246,6 +248,6 @@ tqdm>=4.66.0
 
 ---
 
-## 📜 Lisans
+## 📜 License
 
-Bu proje MIT lisansı altında sunulmaktadır.
+This project is licensed under the MIT License.
